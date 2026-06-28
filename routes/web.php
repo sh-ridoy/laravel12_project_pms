@@ -1,20 +1,45 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Pharmacist\PharmacistController;
+use App\Http\Controllers\Cashier\CashierController;
 
-Route::get('/', function () {
-    return view('welcome');
+
+Route::get('/', fn() => redirect()->route('login'));
+
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
 
-require __DIR__.'/auth.php';
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    });
+
+
+Route::middleware(['auth', 'role:pharmacist'])
+    ->prefix('pharmacist')
+    ->name('pharmacist.')
+    ->group(function () {
+        Route::get('/dashboard', [PharmacistController::class, 'dashboard'])->name('dashboard');
+    });
+
+
+Route::middleware(['auth', 'role:cashier'])
+    ->prefix('cashier')
+    ->name('cashier.')
+    ->group(function () {
+        Route::get('/dashboard', [CashierController::class, 'dashboard'])->name('dashboard');
+    });
